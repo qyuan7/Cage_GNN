@@ -21,3 +21,19 @@ def prepare_db(fname, reactions):
         dataset.append((atom_graph1, adj1, atom_graph2, adj2, label))
     return dataset
 
+def main():
+    reacts = ['amine2aldehyde3',
+              'aldehyde2amine3',
+              'alkene2alkene3',
+              'alkyne2alkyne3',
+              'amine2carboxylic_acid3',
+              'carboxylic_acid2amine3']
+    for react in reacts[1:]:
+        dataset = prepare_db("filtered_all_smi.csv", [react])
+        fname = react + ".ckpt"
+        with open(fname, "wb") as f:
+            pickle.dump(dataset, f)
+
+
+if __name__ == "__main__":
+    main()
