@@ -10,7 +10,7 @@ import pickle
 from sklearn.metrics import precision_score, recall_score
 torch.manual_seed(0)
 
-def test(model, dataset, batch_size, device='cpu'):
+def test(model, dataset, batch_size, val=True, device='cpu'):
     model.to(device)
     model.eval()
     y_preds, y_trues = [], []
@@ -33,8 +33,13 @@ def test(model, dataset, batch_size, device='cpu'):
     corr = sum(y_preds == y_trues)
     precision = precision_score(y_trues, y_preds)
     recall = precision_score(y_trues, y_preds)
-    print("test set accuracy {:.3f}; preicision:{:.3f}; recall:{:.3f}; loss:{:.3f}."
-          .format(corr.item()/len(dataset), precision, recall, loss_total))
+    if val:
+        print("Val set accuracy {:.3f}; preicision:{:.3f}; recall:{:.3f}; loss:{:.3f}."
+              .format(corr.item()/len(dataset), precision, recall, loss_total))
+    else:
+        print("Test set accuracy {:.3f}; preicision:{:.3f}; recall:{:.3f}; loss:{:.3f}."
+              .format(corr.item()/len(dataset), precision, recall, loss_total))
+    return loss_total
 
 
 def train(model, dataset, batch_size,epoch, device='cpu'):
@@ -42,14 +47,17 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=0.006)
     np.random.seed(0)
-
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.8, patience=5)
     np.random.shuffle(dataset)
     N = len(dataset)
-    N_train = int(N * 0.8)
-    N_test = N - N_train
+    N_train = int(N * 0.7)
+    N_big_test = N - N_train
     loss_total = 0
     train_set = dataset[:N_train]
-    test_set = dataset[N_train:]
+    big_test_set = dataset[N_train:]
+    N_val = N_big_test // 2
+    val_set = big_test_set[:N_val]
+    test_set = big_test_set[N_val:]
     for e in range(epoch):
         total_loss = 0
         corr = 0
@@ -72,7 +80,9 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
             data_size += len(y_true)
         acc = corr.item()/data_size
         print(f"total loss for epoch {e} is {total_loss:.2f}\t accuracy {acc:.3f}")
-        test(model, test_set, batch_size)
+        val_loss = test(model, val_set, batch_size)
+        test_loss = test(model, test_set, batch_size,val=False)
+        scheduler.step(val_loss)
     if e == epoch-1:
         torch.save(model.state_dict(), 'test_model.ckpt')
 
