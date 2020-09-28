@@ -3,7 +3,7 @@
 import torch
 import pandas as pd
 import numpy as np
-from cage_gnn_sum import *
+from cage_gnn import *
 import torch.optim as optim
 import torch.nn.functional as F 
 import pickle
@@ -21,7 +21,8 @@ def test(model, dataset, batch_size, val=True, device='cpu'):
         data_batch = list(zip(*dataset[i:i+batch_size]))
         y_true = data_batch[-1]
         y_true = torch.stack(y_true)
-        output = model(data_batch)
+        m1_atoms, adj1, m2_atoms, adj2,label = data_batch
+        output = model(m1_atoms, adj1, m2_atoms, adj2)
         #y_true = torch.cat(data_batch[-1])
         _, y_pred = torch.max(output, 1)
         y_preds.extend(y_pred)
@@ -67,7 +68,8 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
             data_batch = list(zip(*train_set[i:i+batch_size]))
             y_true = data_batch[-1]
             y_true = torch.stack(y_true)
-            output = model(data_batch)
+            m1_atoms, adj1, m2_atoms, adj2, _ = data_batch
+            output = model(m1_atoms, adj1, m2_atoms, adj2)
             criterion = nn.CrossEntropyLoss()
             loss = criterion(output, y_true)
             loss.backward()

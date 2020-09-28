@@ -72,8 +72,8 @@ class graph_cage(nn.Module):
         return molecular_vectors
     
            
-    def forward(self, inputs):
-        m1_atoms, adj1, m2_atoms, adj2,label = inputs
+    def forward(self, m1_atoms, adj1, m2_atoms, adj2):
+        #m1_atoms, adj1, m2_atoms, adj2,label = inputs
         m1_vectors = self.gnn(m1_atoms, adj1)
         m2_vectors = self.gnn(m2_atoms, adj2)
         m_vectors = torch.cat((m1_vectors, m2_vectors), dim=1)
@@ -83,7 +83,6 @@ class graph_cage(nn.Module):
             m_vectors = F.dropout(m_vectors, p=self.dropout, training=self.training)
         score = self.output(m_vectors)
         return score
-
 
 
 
