@@ -46,7 +46,7 @@ def test(model, dataset, batch_size, val=True, device='cpu'):
 def train(model, dataset, batch_size,epoch, device='cpu'):
     model.to(device)
     model.train()
-    optimizer = optim.Adam(model.parameters(), lr=0.006)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
     np.random.seed(0)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.8, patience=5)
     np.random.shuffle(dataset)
