@@ -11,8 +11,6 @@ class graph_cage(nn.Module):
         self.proj_atom = nn.Linear(atom_dim, hidden_dim)
         self.gen_fp = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim)
                                     for _ in range(depth)])
-        self.gen_fp2 = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim)
-                                    for _ in range(depth)])
         self.merge_fp = nn.Linear(2*hidden_dim, hidden_dim,bias=False)
         self.mlp = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim)
                                   for _ in range(2)])
@@ -39,9 +37,6 @@ class graph_cage(nn.Module):
         hidden_vectors = torch.relu(self.gen_fp[layer](vectors))
         return hidden_vectors + torch.matmul(adj, hidden_vectors)
 
-    def update2(self, adj, vectors, layer):
-        hidden_vectors = torch.relu(self.gen_fp2[layer](vectors))
-        return hidden_vectors + torch.matmul(adj, hidden_vectors)
     
     def sum(self, vectors, m_sizes):
         sum_vectors = [torch.sum(v,0) for v in torch.split(vectors, m_sizes)]
@@ -59,18 +54,7 @@ class graph_cage(nn.Module):
         molecular_vectors = self.sum(atom_vectors, m_sizes)
         return molecular_vectors
     
-    def gnn2(self, atoms, adjs):
-        atom_fps = torch.cat(atoms)
-        atom_fps = atom_fps.float()
-        #print(atom_fps.type())
-        adjs, m_sizes = self.pad(adjs)
-        atom_vectors = self.proj_atom(atom_fps)
-        for layer in range(self.depth):
-            hs = self.update2(adjs, atom_vectors, layer)
-            atom_vectors = F.normalize(hs, 2, 1)
-        molecular_vectors = self.sum(atom_vectors, m_sizes)
-        return molecular_vectors
-    
+   
            
     def forward(self, m1_atoms, adj1, m2_atoms, adj2):
         #m1_atoms, adj1, m2_atoms, adj2,label = inputs
