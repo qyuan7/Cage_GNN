@@ -48,7 +48,7 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     np.random.seed(0)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.8, patience=5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.8, patience=5,verbose=True)
     np.random.shuffle(dataset)
     N = len(dataset)
     N_train = int(N * 0.7)
@@ -85,15 +85,20 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
         val_loss = test(model, val_set, batch_size)
         test_loss = test(model, test_set, batch_size,val=False)
         scheduler.step(val_loss)
-    if e == epoch-1:
-        torch.save(model.state_dict(), 'test_model.ckpt')
-
-
+        if e % 100 == 0 and e != 0:
+            torch.save(model.state_dict(), f'gnn_cat_rate_decay_300_loss_weight_grad_{e}.pt')
+        if e == epoch-1:
+            torch.save(model.state_dict(), 'gnn_cat_rate_decay_300_loss_weight_grad.pt')
+            
 def main():
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
     model = graph_cage(120,64,3)
     with open("db_neighbour/test_500_db.ckpt", "rb") as f:
         data = pickle.load(f)
-    train(model, data, 64, 120)
+    train(model, data, 64, 120, device=device)
 
 if __name__ == '__main__':
     main()
