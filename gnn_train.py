@@ -8,7 +8,8 @@ import torch.optim as optim
 import torch.nn.functional as F 
 import pickle
 from sklearn.metrics import precision_score, recall_score
-torch.manual_seed(0)
+torch.manual_seed(2)
+work_dir = "/work/qyuan/molecular_gnn_cage/gpu_jobs/"
 
 def test(model, dataset, batch_size, val=True, device='cpu'):
     model.to(device)
@@ -21,16 +22,19 @@ def test(model, dataset, batch_size, val=True, device='cpu'):
         data_batch = list(zip(*dataset[i:i+batch_size]))
         y_true = data_batch[-1]
         y_true = torch.stack(y_true)
-        m1_atoms, adj1, m2_atoms, adj2,label = data_batch
+        y_true = y_true.to(device)
+        m1_atoms, adj1, m2_atoms, adj2, label = data_batch
         output = model(m1_atoms, adj1, m2_atoms, adj2)
         #y_true = torch.cat(data_batch[-1])
         _, y_pred = torch.max(output, 1)
         y_preds.extend(y_pred)
         y_trues.extend(y_true)
         loss = criterion(output, y_true)
-        loss_total += loss
+        loss_total += loss.item()
     y_trues = torch.stack(y_trues)
     y_preds = torch.stack(y_preds)
+    y_trues = y_trues.cpu().data.numpy()
+    y_preds = y_preds.cpu().data.numpy()
     corr = sum(y_preds == y_trues)
     precision = precision_score(y_trues, y_preds)
     recall = precision_score(y_trues, y_preds)
@@ -47,7 +51,7 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
     model.to(device)
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    np.random.seed(0)
+    np.random.seed(2)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.8, patience=5,verbose=True)
     np.random.shuffle(dataset)
     N = len(dataset)
@@ -68,13 +72,14 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
             data_batch = list(zip(*train_set[i:i+batch_size]))
             y_true = data_batch[-1]
             y_true = torch.stack(y_true)
+            y_true = y_true.to(device)
             m1_atoms, adj1, m2_atoms, adj2, _ = data_batch
             output = model(m1_atoms, adj1, m2_atoms, adj2)
             criterion = nn.CrossEntropyLoss()
             loss = criterion(output, y_true)
             loss.backward()
             optimizer.step()
-            total_loss += loss
+            total_loss += loss.item()
             _, y_pred = torch.max(output, 1)
             #print(y_pred)
             b_corr = sum(y_pred == y_true)
@@ -82,23 +87,29 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
             data_size += len(y_true)
         acc = corr.item()/data_size
         print(f"total loss for epoch {e} is {total_loss:.2f}\t accuracy {acc:.3f}")
-        val_loss = test(model, val_set, batch_size)
-        test_loss = test(model, test_set, batch_size,val=False)
+        val_loss = test(model, val_set, batch_size,device=device)
+        test_loss = test(model, test_set, batch_size,val=False,device=device)
         scheduler.step(val_loss)
         if e % 100 == 0 and e != 0:
-            torch.save(model.state_dict(), f'gnn_cat_rate_decay_300_loss_weight_grad_{e}.pt')
+            torch.save(model.state_dict(), f'{work_dir}gnn_cat256drop_decay_2seed{e}.pt')
         if e == epoch-1:
-            torch.save(model.state_dict(), 'gnn_cat_rate_decay_300_loss_weight_grad.pt')
-            
+            torch.save(model.state_dict(), f'{work_dir}gnn_cat256drop_decay_2seed.pt')
+
 def main():
     if torch.cuda.is_available():
         device = torch.device('cuda')
+
+        model = graph_cage(120,128,2,device='cuda')
+        print(f"Activating {device} for calculation.")
+        print(model)
     else:
         device = torch.device('cpu')
-    model = graph_cage(120,64,3)
-    with open("db_neighbour/test_500_db.ckpt", "rb") as f:
+        model = graph_cage(120,64,2, device='cpu')
+        print(f"Using {device} for calculation.")
+
+    with open("/work/qyuan/molecular_gnn_cage/db_neighbour_grad/all_cages.ckpt", "rb") as f:
         data = pickle.load(f)
-    train(model, data, 64, 120, device=device)
+    train(model, data, 64, 200, device=device)
 
 if __name__ == '__main__':
     main()
