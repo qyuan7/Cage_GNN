@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import numpy as np
 
 class graph_cage(nn.Module):
-    def __init__(self,atom_dim, hidden_dim, depth, dropout=0.0):
+    def __init__(self,atom_dim, hidden_dim, depth,  dropout=0.0,task='classification',device="cpu"):
         super().__init__()
         self.proj_atom = nn.Linear(atom_dim, hidden_dim)
         self.gen_fp = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim)
@@ -14,9 +14,13 @@ class graph_cage(nn.Module):
         self.merge_fp = nn.Linear(2*hidden_dim, hidden_dim,bias=False)
         self.mlp = nn.ModuleList([nn.Linear(hidden_dim, hidden_dim)
                                   for _ in range(2)])
-        self.output = nn.Linear(hidden_dim, 2)
+        if task == 'classification':
+            self.output = nn.Linear(hidden_dim, 2)
+        else:
+            self.output = nn.Linear(hidden_dim, 1)
         self.depth = depth
         self.dropout = dropout
+        self.device = torch.device(device)
 
     @staticmethod
     def pad(matrices, pad_value=0):
@@ -45,8 +49,10 @@ class graph_cage(nn.Module):
     def gnn(self, atoms, adjs):
         atom_fps = torch.cat(atoms)
         atom_fps = atom_fps.float()
+        atom_fps = atom_fps.to(self.device)
         #print(atom_fps.type())
         adjs, m_sizes = self.pad(adjs)
+        adjs = adjs.to(self.device)
         atom_vectors = self.proj_atom(atom_fps)
         for layer in range(self.depth):
             hs = self.update(adjs, atom_vectors, layer)
