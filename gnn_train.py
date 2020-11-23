@@ -8,8 +8,11 @@ import torch.optim as optim
 import torch.nn.functional as F 
 import pickle
 from sklearn.metrics import precision_score, recall_score
+import logging
 torch.manual_seed(2)
 work_dir = "/work/qyuan/molecular_gnn_cage/gpu_jobs/"
+logging.basicConfig(filename=work_dir+"gnn_cage.log", level=logging.DEBUG)
+
 
 def test(model, dataset, batch_size, val=True, device='cpu'):
     model.to(device)
@@ -39,10 +42,10 @@ def test(model, dataset, batch_size, val=True, device='cpu'):
     precision = precision_score(y_trues, y_preds)
     recall = precision_score(y_trues, y_preds)
     if val:
-        print("Val set accuracy {:.3f}; preicision:{:.3f}; recall:{:.3f}; loss:{:.3f}."
+        logging.info("Val set accuracy {:.3f}; preicision:{:.3f}; recall:{:.3f}; loss:{:.3f}."
               .format(corr.item()/len(dataset), precision, recall, loss_total))
     else:
-        print("Test set accuracy {:.3f}; preicision:{:.3f}; recall:{:.3f}; loss:{:.3f}."
+        logging.info("Test set accuracy {:.3f}; preicision:{:.3f}; recall:{:.3f}; loss:{:.3f}."
               .format(corr.item()/len(dataset), precision, recall, loss_total))
     return loss_total
 
@@ -86,7 +89,7 @@ def train(model, dataset, batch_size,epoch, device='cpu'):
             corr += b_corr
             data_size += len(y_true)
         acc = corr.item()/data_size
-        print(f"total loss for epoch {e} is {total_loss:.2f}\t accuracy {acc:.3f}")
+        logging.info(f"total loss for epoch {e} is {total_loss:.2f}\t accuracy {acc:.3f}")
         val_loss = test(model, val_set, batch_size,device=device)
         test_loss = test(model, test_set, batch_size,val=False,device=device)
         scheduler.step(val_loss)
@@ -100,12 +103,12 @@ def main():
         device = torch.device('cuda')
 
         model = graph_cage(120,128,2,device='cuda')
-        print(f"Activating {device} for calculation.")
-        print(model)
+        logging.info(f"Activating {device} for calculation.")
+        logging.info(model)
     else:
         device = torch.device('cpu')
         model = graph_cage(120,64,2, device='cpu')
-        print(f"Using {device} for calculation.")
+        logging.info(f"Using {device} for calculation.")
 
     with open("/work/qyuan/molecular_gnn_cage/db_neighbour_grad/all_cages.ckpt", "rb") as f:
         data = pickle.load(f)
