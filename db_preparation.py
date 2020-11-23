@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import pandas as pd
-from mol_cage_graph import *
+from mol_cage_graph_neighbour import *
 import pickle
 
 def prepare_db(fname, reactions):
