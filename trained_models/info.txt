@@ -1,0 +1,1 @@
+GNN models trained with the different test sets. 1-6 correspond to reaction mechanisms 1 to 6.
