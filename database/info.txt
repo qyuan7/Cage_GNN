@@ -1,1 +1,3 @@
+db_preparation.py: Process cage building block and linker molecules using atomic information and connectivity, save as the input file of the torch GNN model.
 
+db_augment_balance.py: Sample cage information with balanced collapsed/uncollapsed cages, used to process data prior to integrated gradient computation.
