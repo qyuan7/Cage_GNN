@@ -1,1 +1,6 @@
+gnn_integrated_gradients.py: Implementation of integrated gradient calculation for atoms in cage precursors
+
+integrated_gradient_test.py: Code to calculation integrated gradients of selected cages (i.e. different reaction mechansims) using the above method
+
+substructure_val.py: Retrieve probability of cage collapsed when specific fragment is used in the cage precusros.
 
