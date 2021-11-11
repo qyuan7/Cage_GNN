@@ -1,1 +1,7 @@
+This folder contains the code needed to process molecular cage information using GNN and to train the GNN.
 
+mol_cage_graph_neighbour.py & mol_cage_graph.py: Encode molecular SMILES of cage precursors to tensors of atom information and connectivity information (adjacence matrix). Encoding with neighbour information was used by default.
+
+cage_gnn.py: GNN built using pytorch to process precursor vectors of building blocks and linkers of cages.
+
+gnn_train.py: Code to train and test the GNN model.
